@@ -3,7 +3,7 @@ import sys
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
-
+from base64 import b64encode, b64decode
 
 
 
@@ -12,36 +12,21 @@ key = b'12345678abcdefgh'  # This is your key
 # takes in a key and plain text and returns the cipher text
 
 # plain text -> encoded -> padded to block size (16 bytes) -> encrypted -> encoded -> cipher text
-
+# Function to encrypt a string and return the ciphertext
 def encrypt(key, plain_text):
-    cipher = AES.new(key, AES.MODE_CBC)                             # create a cipher object using the key
-    
-    padded_plain_text = pad(plain_text.encode(), AES.block_size)    # pad the encoded plain text to be a multiple of 16 bytes
-    
-    cipher_bytes = cipher.encrypt(padded_plain_text)                # encrypt the padded plain text bytes
-    
-    return cipher_bytes.decode()                                    # return the cipher text as a string
+    cipher = AES.new(key, AES.MODE_CBC)
+    padded_plain_text = pad(plain_text.encode(), AES.block_size)
+    cipher_text_bytes = cipher.encrypt(padded_plain_text)
+    cipher_text = b64encode(cipher_text_bytes).decode()
+    return cipher_text
 
-
-# code golf version of encrypt
-def encrypt_concise(key, plain_text):
-    return AES.new(key, AES.MODE_CBC).encrypt(pad(plain_text.encode(), AES.block_size)).decode()
-
-
-# takes in a key and cipher text and returns the plain text
+# Function to decrypt the ciphertext and return the original plaintext
 def decrypt(key, cipher_text):
-    cipher = AES.new(key, AES.MODE_CBC) # create a cipher object using the key
-    
-    padded_bytes = cipher.decrypt(cipher_text.encode()) # decrypt the encoded cipher text 
-    
-    unpadded_bytes = unpad(padded_bytes, AES.block_size) # unpad the decrypted bytes
-    
-    plain_text = unpadded_bytes.decode() # convert plain text to string
-    
+    cipher = AES.new(key, AES.MODE_CBC)
+    cipher_text_bytes = b64decode(cipher_text)
+    padded_plain_text_bytes = cipher.decrypt(cipher_text_bytes)
+    plain_text = unpad(padded_plain_text_bytes, AES.block_size).decode()
     return plain_text
-
-def decrypt_concise(key, cipher_text):
-    return AES.new(key, AES.MODE_CBC).decrypt(cipher_text).decode()
 
 def get_login():
     username = input("Enter your username: ")
