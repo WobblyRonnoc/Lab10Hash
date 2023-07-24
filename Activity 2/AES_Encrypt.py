@@ -1,71 +1,81 @@
-# prompt user for username and password then prompt to encrypt or decrypt
-import sys
+# AES Encryption
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from base64 import b64encode, b64decode
 
+key = b'12345678abcdefgh'  # This is your key (16 bytes)
+cipher = AES.new(key, AES.MODE_CBC)  # Create an AES cipher object with the key using the mode CBC
+
+# get the data to encrypt
+print("Enter your username and password to encrypt")
+username = input("Username: ")
+password = input("Password: ")
+
+print("\n\n")
+print("\t* encrypting the data".center(50, "="))
+
+# encode the data to bytes
+print("\t* encoding username and password to bytes...")
+username = username.encode()
+password = password.encode()
 
 
-key = b'12345678abcdefgh'  # This is your key
-
-# takes in a key and plain text and returns the cipher text
-
-# plain text -> encoded -> padded to block size (16 bytes) -> encrypted -> encoded -> cipher text
-# Function to encrypt a string and return the ciphertext
-def encrypt(key, plain_text):
-    cipher = AES.new(key, AES.MODE_CBC)
-    padded_plain_text = pad(plain_text.encode(), AES.block_size)
-    cipher_text_bytes = cipher.encrypt(padded_plain_text)
-    cipher_text = b64encode(cipher_text_bytes).decode()
-    return cipher_text
-
-# Function to decrypt the ciphertext and return the original plaintext
-def decrypt(key, cipher_text):
-    cipher = AES.new(key, AES.MODE_CBC)
-    cipher_text_bytes = b64decode(cipher_text)
-    padded_plain_text_bytes = cipher.decrypt(cipher_text_bytes)
-    plain_text = unpad(padded_plain_text_bytes, AES.block_size).decode()
-    return plain_text
-
-def get_login():
-    username = input("Enter your username: ")
-    password = input("Enter your password: ")
-    return username, password
-
-def get_choice():
-    try:
-        choice = input("Would you like to encrypt or decrypt? (e/d): ")
-        if choice == 'e' or choice == 'd':
-            return choice
-    except ValueError:
-        print("Please enter a valid choice.")
-        get_choice()
-
-# define the main function
-def main(key):
-    username, password = get_login()
-    choice = get_choice()
-    if choice == 'e':
-        print("Encrypting...")
-        encrypted_username = encrypt(key, username)
-        encrypted_password = encrypt(key, password)
-        print("Encrypted username: " + encrypted_username)
-        print("Encrypted password: " + encrypted_password)
-        
-    elif choice == 'd':
-        print("Decrypting...")
-        decrypted_username = decrypt(key, username)
-        decrypted_password = decrypt(key, password)
-        print("Decrypted username: " + decrypted_username)
-        print("Decrypted password: " + decrypted_password)
-        
-    else:
-        print("Please enter a valid choice.")
-        get_choice()
-    sys.exit(0)
+# pad the user and password so that it is a multiple of 16 bytes
+print("\t* padding username and password...")
+username = pad(username, AES.block_size)
+password = pad(password, AES.block_size)
 
 
-# call the main function
-if __name__ == '__main__':
-    main(key)
+# encrypt the data
+print("\t* encrypting username and password...")
+encrypted_username = cipher.encrypt(username)
+encrypted_password = cipher.encrypt(password)
+
+# encode the encrypted data to base64 before decoding to utf-8 to
+ct_username = b64encode(encrypted_username).decode('utf-8')
+ct_password = b64encode(encrypted_password).decode('utf-8')
+
+# get the initialization vector
+iv = b64encode(cipher.iv).decode('utf-8')
+
+# print the encrypted data
+print('=' * 50)
+print(f"Encrypted Username and Password")
+print(f"Username: {ct_username}")
+print(f"Password: {ct_password}")
+
+# decrypt the data
+
+print("\n\n")
+print("Decrypting the data".center(50, "="))
+
+
+# decode the base64 encoded initialization vector
+print("decoding the base64 encoded initialization vector...")
+iv = b64decode(iv)
+
+# decode the base64 encoded encrypted ciphertexts
+print("decoding the base64 encoded encrypted ciphertexts...")
+ct_username = b64decode(ct_username)
+ct_password = b64decode(ct_password)
+
+# using the initialization vector, create a new cipher object
+print("using the initialization vector to create a new cipher object...")
+cipher = AES.new(key, AES.MODE_CBC, iv)
+
+# unpad and decrypt the ciphertexts to get the plaintext username and password
+print("unpadding and decrypting the ciphertexts...")
+pt_username = unpad(cipher.decrypt(ct_username), AES.block_size)
+pt_password = unpad(cipher.decrypt(ct_password), AES.block_size)
+
+# decode the bytes back into strings
+print("decoding the bytes back into strings...")
+pt_username = pt_username.decode()
+pt_password = pt_password.decode()
+
+# print the plaintext username and password
+print('=' * 50)
+print(f"Decrypted Username and Password")
+print(f"Username: {pt_username}")
+print(f"Password: {pt_password}")
